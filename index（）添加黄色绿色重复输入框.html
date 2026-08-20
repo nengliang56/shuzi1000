@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字映射填充器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            position: relative;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 28px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 22px;
+            text-align: center;
+        }
+        th {
+            background: #2c3e50;
+            color: #fff;
+            border: 2px solid #1a252f;
+            padding: 14px 6px;
+            font-weight: bold;
+        }
+        th.input-header {
+            background: #e74c3c;
+            border: 2px solid #c0392b;
+            width: 80px;
+            font-size: 14px;
+            padding: 10px 4px;
+        }
+        td.data-cell {
+            border: 2px solid #ddd;
+            padding: 12px 6px;
+            height: 55px;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            width: 9%;
+        }
+        tr:nth-child(even) td.data-cell {
+            background: #fafafa;
+        }
+        tr:hover td.data-cell {
+            background: #f0f8ff;
+        }
+        .cell-unique {
+            background-color: #ff0000 !important;
+            color: #fff !important;
+            animation: popIn 0.3s ease;
+        }
+        .cell-dup {
+            background-color: #2196F3 !important;
+            color: #fff !important;
+            animation: popIn 0.3s ease;
+        }
+        .cell-yellow {
+            background-color: #f1c40f !important;
+            color: #333 !important;
+            animation: popIn 0.3s ease;
+        }
+        .cell-green {
+            background-color: #27ae60 !important;
+            color: #fff !important;
+            animation: popIn 0.3s ease;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        td.input-cell {
+            border: 2px solid #e74c3c;
+            padding: 4px 2px;
+            background: #fdf2f2;
+            width: 80px;
+        }
+        .input-group {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            align-items: center;
+        }
+        .digit-input {
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            text-align: center;
+            border: 1.5px solid #bdc3c7;
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            padding: 0;
+        }
+        .digit-input:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+        }
+        .digit-input::-webkit-outer-spin-button,
+        .digit-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* 第二行：标记输入框 + 颜色按钮 */
+        .row2-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            padding: 0 2px;
+        }
+        .mark-input {
+            width: 28px;
+            height: 22px;
+            font-size: 12px;
+            text-align: center;
+            border: 1.5px solid #c0392b;
+            border-radius: 4px;
+            outline: none;
+            padding: 0;
+            background: #ff0000;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mark-input:focus {
+            border-color: #c0392b;
+            box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.3);
+        }
+        .mark-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+        .mark-input::-webkit-outer-spin-button,
+        .mark-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .theme-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .theme-btn:hover {
+            transform: scale(1.15);
+            border-color: #999;
+        }
+        .theme-btn.active {
+            border-color: #333;
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor;
+        }
+        .theme-btn-yellow {
+            background: #f1c40f;
+            color: #f1c40f;
+        }
+        .theme-btn-green {
+            background: #27ae60;
+            color: #27ae60;
+        }
+        .theme-btn.active::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9px;
+            color: #333;
+            font-weight: bold;
+        }
+        .theme-btn-green.active::after {
+            color: #fff;
+        }
+        .temp-note-area {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .temp-note-textarea {
+            width: 100%;
+            max-width: 100%;
+            height: 80px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            background: #fffbeb;
+            font-size: 16px;
+            padding: 12px;
+            resize: vertical;
+            font-family: inherit;
+            color: #333;
+        }
+        .temp-note-textarea:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        }
+        .temp-note-textarea::placeholder {
+            color: #bbb;
+            font-size: 14px;
+        }
+        .hint {
+            text-align: center;
+            color: #7f8c8d;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .row-count {
+            text-align: center;
+            color: #999;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-export { background: #27ae60; color: #fff; }
+        .btn-export:hover { background: #219a52; }
+        .btn-import { background: #3498db; color: #fff; }
+        .btn-import:hover { background: #2980b9; }
+        .btn-clear { background: #e74c3c; color: #fff; }
+        .btn-clear:hover { background: #c0392b; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal h3 { margin-bottom: 15px; color: #333; }
+        .modal textarea {
+            width: 100%;
+            height: 150px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            font-family: monospace;
+            resize: vertical;
+            outline: none;
+        }
+        .modal textarea:focus { border-color: #3498db; }
+        .modal-btns {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-confirm { background: #3498db; color: #fff; }
+        .btn-confirm:hover { background: #2980b9; }
+        .btn-cancel { background: #95a5a6; color: #fff; }
+        .btn-cancel:hover { background: #7f8c8d; }
+        .save-status {
+            text-align: center;
+            color: #27ae60;
+            font-size: 12px;
+            margin-top: 5px;
+            height: 18px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .save-status.show { opacity: 1; }
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            table { font-size: 16px; }
+            td.data-cell { padding: 8px 4px; height: 44px; font-size: 18px; }
+            .digit-input { width: 22px; height: 22px; font-size: 12px; }
+            th { padding: 10px 4px; font-size: 14px; }
+            th.input-header, td.input-cell { width: 60px; }
+            h1 { font-size: 20px; }
+            .temp-note-textarea { height: 60px; font-size: 14px; }
+            .mark-input { width: 24px; height: 20px; font-size: 11px; }
+            .theme-btn { width: 16px; height: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>数字映射填充器</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+                    <th>6</th><th>7</th><th>8</th><th>9</th><th>0</th>
+                    <th class="input-header">输入</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+
+        <div class="temp-note-area">
+            <textarea class="temp-note-textarea" id="tempNote" placeholder="临时记录..."></textarea>
+        </div>
+
+        <p class="hint">在右侧输入4个数字（0-9），自动映射到左侧对应列；<b style="color:#ff0000">红色=唯一</b>，<b style="color:#2196F3">蓝色=重复</b>；点击黄/绿圆点切换行颜色</p>
+        <p class="row-count" id="rowCount">当前行数: 0 / 100</p>
+        <p class="save-status" id="saveStatus">已自动保存到本地</p>
+
+        <div class="action-bar">
+            <button class="btn btn-export" onclick="exportData()">导出数据</button>
+            <button class="btn btn-import" onclick="showImportModal()">导入数据</button>
+            <button class="btn btn-clear" onclick="clearAllData()">清空数据</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <h3>导入数据</h3>
+            <p style="color:#666; font-size:13px; margin-bottom:10px;">每行输入4个数字，例如：<code>2568</code> 或 <code>2,5,6,8</code></p>
+            <textarea id="importText" placeholder="在此粘贴数据..."></textarea>
+            <div class="modal-btns">
+                <button class="btn btn-cancel" onclick="hideImportModal()">取消</button>
+                <button class="btn btn-confirm" onclick="importData()">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const colLabels = ['1','2','3','4','5','6','7','8','9','0'];
+        const MAX_ROWS = 100;
+        const STORAGE_KEY = 'number_mapper_data';
+        const NOTE_KEY = 'number_mapper_note';
+        let rowCounter = 0;
+        const tbody = document.getElementById('tbody');
+        const rowCountDisplay = document.getElementById('rowCount');
+        const saveStatus = document.getElementById('saveStatus');
+        const importModal = document.getElementById('importModal');
+        const importText = document.getElementById('importText');
+        const tempNote = document.getElementById('tempNote');
+        let saveTimer = null;
+
+        function saveToLocal() {
+            const rows = tbody.querySelectorAll('tr');
+            const data = [];
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input.digit-input');
+                const values = Array.from(inputs).map(inp => inp.value);
+                const theme = row.dataset.rowTheme || 'default';
+                const mark = row.querySelector('.mark-input') ? row.querySelector('.mark-input').value : '';
+                data.push({ values: values, theme: theme, mark: mark });
+            });
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                showSaveStatus();
+            } catch (e) {
+                console.error('保存失败:', e);
+            }
+        }
+
+        function saveNoteToLocal() {
+            try {
+                localStorage.setItem(NOTE_KEY, tempNote.value);
+                showSaveStatus();
+            } catch (e) {
+                console.error('记录保存失败:', e);
+            }
+        }
+
+        function loadFromLocal() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('读取失败:', e);
+            }
+            return null;
+        }
+
+        function loadNoteFromLocal() {
+            try {
+                const saved = localStorage.getItem(NOTE_KEY);
+                if (saved !== null) {
+                    tempNote.value = saved;
+                }
+            } catch (e) {
+                console.error('记录读取失败:', e);
+            }
+        }
+
+        function showSaveStatus() {
+            saveStatus.classList.add('show');
+            if (saveTimer) clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                saveStatus.classList.remove('show');
+            }, 1500);
+        }
+
+        function clearAllData() {
+            if (confirm('确定要清空所有数据吗？此操作不可恢复。')) {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(NOTE_KEY);
+                tbody.innerHTML = '';
+                rowCounter = 0;
+                tempNote.value = '';
+                for (let r = 0; r < 2; r++) {
+                    tbody.appendChild(createRow());
+                }
+                updateRowCount();
+            }
+        }
+
+        function updateRowCount() {
+            const rows = tbody.querySelectorAll('tr');
+            rowCountDisplay.textContent = `当前行数: ${rows.length} / ${MAX_ROWS}`;
+        }
+
+        function removeFirstRow() {
+            const firstRow = tbody.querySelector('tr');
+            if (firstRow) {
+                firstRow.remove();
+            }
+        }
+
+        function toggleTheme(rowIdx, theme) {
+            const row = document.querySelector(`tr[data-row-id="${rowIdx}"]`);
+            if (!row) return;
+            const currentTheme = row.dataset.rowTheme || 'default';
+            const newTheme = (currentTheme === theme) ? 'default' : theme;
+            row.dataset.rowTheme = newTheme;
+
+            const yellowBtn = row.querySelector('.theme-btn-yellow');
+            const greenBtn = row.querySelector('.theme-btn-green');
+            if (yellowBtn) yellowBtn.classList.toggle('active', newTheme === 'yellow');
+            if (greenBtn) greenBtn.classList.toggle('active', newTheme === 'green');
+
+            updateRow(rowIdx);
+            saveToLocal();
+        }
+
+        function createRow(initialData) {
+            const rowIdx = rowCounter++;
+            const tr = document.createElement('tr');
+            tr.dataset.rowId = rowIdx;
+
+            const theme = (initialData && initialData.theme) ? initialData.theme : 'default';
+            tr.dataset.rowTheme = theme;
+
+            for (let c = 0; c < 10; c++) {
+                const td = document.createElement('td');
+                td.className = 'data-cell';
+                td.id = `cell-${rowIdx}-${c}`;
+                tr.appendChild(td);
+            }
+
+            const inputTd = document.createElement('td');
+            inputTd.className = 'input-cell';
+
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.alignItems = 'center';
+
+            // 第一行：4个数字输入框
+            const container = document.createElement('div');
+            container.className = 'input-group';
+
+            const inputs = [];
+            for (let i = 0; i < 4; i++) {
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.className = 'digit-input';
+                inp.min = '0';
+                inp.max = '9';
+                inp.placeholder = '';
+                inp.dataset.row = rowIdx;
+                inp.dataset.pos = i;
+                if (initialData && initialData.values && initialData.values[i]) {
+                    inp.value = initialData.values[i];
+                }
+                inputs.push(inp);
+                container.appendChild(inp);
+            }
+
+            // 第二行：标记输入框 + 黄/绿圆点
+            const row2 = document.createElement('div');
+            row2.className = 'row2-controls';
+
+            const markInput = document.createElement('input');
+            markInput.type = 'number';
+            markInput.className = 'mark-input';
+            markInput.placeholder = '';
+            if (initialData && initialData.mark !== undefined) {
+                markInput.value = initialData.mark;
+            }
+            markInput.addEventListener('input', function() {
+                if (this.value.length > 2) {
+                    this.value = this.value.slice(0, 2);
+                }
+                saveToLocal();
+            });
+
+            const btnGroup = document.createElement('div');
+            btnGroup.style.display = 'flex';
+            btnGroup.style.gap = '4px';
+
+            const yellowBtn = document.createElement('button');
+            yellowBtn.className = 'theme-btn theme-btn-yellow' + (theme === 'yellow' ? ' active' : '');
+            yellowBtn.title = '黄色';
+            yellowBtn.onclick = function() {
+                toggleTheme(rowIdx, 'yellow');
+            };
+
+            const greenBtn = document.createElement('button');
+            greenBtn.className = 'theme-btn theme-btn-green' + (theme === 'green' ? ' active' : '');
+            greenBtn.title = '绿色';
+            greenBtn.onclick = function() {
+                toggleTheme(rowIdx, 'green');
+            };
+
+            btnGroup.appendChild(yellowBtn);
+            btnGroup.appendChild(greenBtn);
+
+            row2.appendChild(markInput);
+            row2.appendChild(btnGroup);
+
+            wrapper.appendChild(container);
+            wrapper.appendChild(row2);
+            inputTd.appendChild(wrapper);
+            tr.appendChild(inputTd);
+
+            inputs.forEach((inp, idx) => {
+                inp.addEventListener('input', function() {
+                    let val = this.value;
+                    if (val.length > 1) {
+                        this.value = val.slice(0, 1);
+                        val = this.value;
+                    }
+                    if (val !== '' && (val < '0' || val > '9')) {
+                        this.value = '';
+                        val = '';
+                    }
+                    updateRow(rowIdx);
+                    saveToLocal();
+                    if (val !== '' && idx < 3) {
+                        inputs[idx + 1].focus();
+                    }
+                    if (idx === 3 && val !== '') {
+                        setTimeout(() => {
+                            const allFilled = inputs.every(input => input.value !== '');
+                            if (allFilled) {
+                                addNewRow();
+                            }
+                        }, 50);
+                    }
+                });
+                inp.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && this.value === '' && idx > 0) {
+                        inputs[idx - 1].focus();
+                    }
+                });
+            });
+
+            return tr;
+        }
+
+        function updateRow(rowIdx) {
+            const row = document.querySelector(`tr[data-row-id="${rowIdx}"]`);
+            const inputs = document.querySelectorAll(`input[data-row="${rowIdx}"]`);
+            const values = Array.from(inputs).map(inp => inp.value);
+            const theme = row ? (row.dataset.rowTheme || 'default') : 'default';
+
+            for (let c = 0; c < 10; c++) {
+                const cell = document.getElementById(`cell-${rowIdx}-${c}`);
+                if (cell) {
+                    cell.textContent = '';
+                    cell.classList.remove('cell-unique', 'cell-dup', 'cell-yellow', 'cell-green');
+                }
+            }
+
+            const countMap = {};
+            values.forEach(v => {
+                if (v !== '') {
+                    countMap[v] = (countMap[v] || 0) + 1;
+                }
+            });
+
+            values.forEach((val) => {
+                if (val !== '' && val >= '0' && val <= '9') {
+                    const colIdx = colLabels.indexOf(val);
+                    if (colIdx !== -1) {
+                        const cell = document.getElementById(`cell-${rowIdx}-${colIdx}`);
+                        if (cell) {
+                            cell.textContent = val;
+                            if (theme === 'yellow') {
+                                cell.classList.add('cell-yellow');
+                            } else if (theme === 'green') {
+                                cell.classList.add('cell-green');
+                            } else {
+                                if (countMap[val] >= 2) {
+                                    cell.classList.add('cell-dup');
+                                } else {
+                                    cell.classList.add('cell-unique');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function addNewRow() {
+            const currentRows = tbody.querySelectorAll('tr');
+            if (currentRows.length >= MAX_ROWS) {
+                removeFirstRow();
+            }
+            const newRow = createRow();
+            tbody.appendChild(newRow);
+            updateRowCount();
+            saveToLocal();
+            const firstInput = newRow.querySelector('input.digit-input');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }
+
+        function exportData() {
+            const rows = tbody.querySelectorAll('tr');
+            const data = [];
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input.digit-input');
+                const values = Array.from(inputs).map(inp => inp.value);
+                const theme = row.dataset.rowTheme || 'default';
+                const mark = row.querySelector('.mark-input') ? row.querySelector('.mark-input').value : '';
+                if (values.some(v => v !== '')) {
+                    let line = values.join('');
+                    if (theme === 'yellow') line += '|Y';
+                    else if (theme === 'green') line += '|G';
+                    if (mark) line += '|M' + mark;
+                    data.push(line);
+                }
+            });
+            if (data.length === 0) {
+                alert('没有可导出的数据！');
+                return;
+            }
+            const text = data.join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '数字映射数据_' + new Date().toLocaleDateString() + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert(`已导出 ${data.length} 行数据！`);
+        }
+
+        function showImportModal() {
+            importText.value = '';
+            importModal.classList.add('active');
+            importText.focus();
+        }
+
+        function hideImportModal() {
+            importModal.classList.remove('active');
+        }
+
+        function importData() {
+            const text = importText.value.trim();
+            if (!text) {
+                alert('请输入数据！');
+                return;
+            }
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const validData = [];
+            lines.forEach(line => {
+                let theme = 'default';
+                let mark = '';
+                let numPart = line;
+
+                const markMatch = numPart.match(/\|M(\d+)$/);
+                if (markMatch) {
+                    mark = markMatch[1];
+                    numPart = numPart.slice(0, numPart.lastIndexOf('|M'));
+                }
+
+                if (numPart.endsWith('|Y')) {
+                    theme = 'yellow';
+                    numPart = numPart.slice(0, -2);
+                } else if (numPart.endsWith('|G')) {
+                    theme = 'green';
+                    numPart = numPart.slice(0, -2);
+                }
+
+                let digits = numPart.replace(/[^0-9]/g, '').split('');
+                if (digits.length >= 4) {
+                    validData.push({ values: digits.slice(0, 4), theme: theme, mark: mark });
+                } else if (digits.length > 0) {
+                    while (digits.length < 4) digits.push('');
+                    validData.push({ values: digits, theme: theme, mark: mark });
+                }
+            });
+            if (validData.length === 0) {
+                alert('未找到有效的数据！');
+                return;
+            }
+            tbody.innerHTML = '';
+            rowCounter = 0;
+            validData.forEach((item, idx) => {
+                if (idx >= MAX_ROWS) return;
+                const row = createRow(item);
+                tbody.appendChild(row);
+                updateRow(row.dataset.rowId);
+            });
+            saveToLocal();
+            updateRowCount();
+            hideImportModal();
+            alert(`成功导入 ${Math.min(validData.length, MAX_ROWS)} 行数据！`);
+        }
+
+        importModal.addEventListener('click', function(e) {
+            if (e.target === importModal) {
+                hideImportModal();
+            }
+        });
+
+        tempNote.addEventListener('input', function() {
+            saveNoteToLocal();
+        });
+
+        function init() {
+            const savedData = loadFromLocal();
+            if (savedData && savedData.length > 0) {
+                savedData.forEach(item => {
+                    const row = createRow(item);
+                    tbody.appendChild(row);
+                    updateRow(row.dataset.rowId);
+                });
+            } else {
+                for (let r = 0; r < 2; r++) {
+                    const row = createRow();
+                    tbody.appendChild(row);
+                }
+            }
+            loadNoteFromLocal();
+            updateRowCount();
+            setTimeout(() => {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }, 100);
+        }
+
+        init();
+    </script>
+</body>
+</html>

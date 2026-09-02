@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>五五五五五</title>
+    <title>数字映射填充器</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -320,7 +320,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>五五五五五</h1>
+        <h1>数字映射填充器</h1>
         <table>
             <thead>
                 <tr>
@@ -332,12 +332,16 @@
             <tbody id="tbody"></tbody>
         </table>
 
+        <div style="text-align: center; margin-top: 10px;">
+            <button class="btn btn-export" onclick="addNewRow()" style="background: #3498db;">+ 添加空白行</button>
+        </div>
+
         <div class="temp-note-area">
             <textarea class="temp-note-textarea" id="tempNote" placeholder="临时记录..."></textarea>
         </div>
 
         <p class="hint">在右侧输入4个数字（0-9），自动映射到左侧对应列；<b style="color:#ff0000">红色=唯一</b>，<b style="color:#2196F3">蓝色=重复</b>；点击黄/绿圆点切换行颜色</p>
-        <p class="row-count" id="rowCount">当前行数: 0 / 100</p>
+        <p class="row-count" id="rowCount">当前行数: 0</p>
         <p class="save-status" id="saveStatus">已自动保存到本地</p>
 
         <div class="action-bar">
@@ -361,7 +365,7 @@
 
     <script>
         const colLabels = ['1','2','3','4','5','6','7','8','9','0'];
-        const MAX_ROWS = 100;
+        const MAX_ROWS = Infinity;
         const STORAGE_KEY = 'number_mapper_data';
         const NOTE_KEY = 'number_mapper_note';
         let rowCounter = 0;
@@ -447,7 +451,7 @@
 
         function updateRowCount() {
             const rows = tbody.querySelectorAll('tr');
-            rowCountDisplay.textContent = `当前行数: ${rows.length} / ${MAX_ROWS}`;
+            rowCountDisplay.textContent = `当前行数: ${rows.length}`;
         }
 
         function removeFirstRow() {
@@ -580,14 +584,7 @@
                     if (val !== '' && idx < 3) {
                         inputs[idx + 1].focus();
                     }
-                    if (idx === 3 && val !== '') {
-                        setTimeout(() => {
-                            const allFilled = inputs.every(input => input.value !== '');
-                            if (allFilled) {
-                                addNewRow();
-                            }
-                        }, 50);
-                    }
+                    // 不再自动添加新行，改为手动添加
                 });
                 inp.addEventListener('keydown', function(e) {
                     if (e.key === 'Backspace' && this.value === '' && idx > 0) {
@@ -646,17 +643,15 @@
 
         function addNewRow() {
             const currentRows = tbody.querySelectorAll('tr');
-            if (currentRows.length >= MAX_ROWS) {
-                removeFirstRow();
-            }
+            
             const newRow = createRow();
             tbody.appendChild(newRow);
             updateRowCount();
             saveToLocal();
-            const firstInput = newRow.querySelector('input.digit-input');
-            if (firstInput) {
-                firstInput.focus();
-            }
+            // 滚动到新添加的行
+            setTimeout(() => {
+                newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 50);
         }
 
         function exportData() {
@@ -744,7 +739,7 @@
             tbody.innerHTML = '';
             rowCounter = 0;
             validData.forEach((item, idx) => {
-                if (idx >= MAX_ROWS) return;
+                // 不限制行数，全部导入
                 const row = createRow(item);
                 tbody.appendChild(row);
                 updateRow(row.dataset.rowId);
@@ -752,7 +747,7 @@
             saveToLocal();
             updateRowCount();
             hideImportModal();
-            alert(`成功导入 ${Math.min(validData.length, MAX_ROWS)} 行数据！`);
+            alert(`成功导入 ${validData.length} 行数据！`);
         }
 
         importModal.addEventListener('click', function(e) {

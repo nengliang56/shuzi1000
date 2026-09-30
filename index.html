@@ -126,11 +126,12 @@
             align-items: center;
             margin-top: 4px;
             padding: 0 2px;
+            gap: 4px;
         }
         .mark-input {
-            width: 28px;
+            width: 60px;
             height: 22px;
-            font-size: 12px;
+            font-size: 14px;
             text-align: center;
             border: 1.5px solid #c0392b;
             border-radius: 4px;
@@ -192,6 +193,45 @@
         .theme-btn-green.active::after {
             color: #fff;
         }
+        .toggle-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            border-radius: 4px;
+            transition: all 0.2s;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .toggle-btn:hover {
+            background: #eee;
+            color: #333;
+        }
+        tr.collapsed {
+            visibility: collapse;
+        }
+        tr.collapsed td {
+            padding: 0 !important;
+            border: none !important;
+            font-size: 0 !important;
+            line-height: 0 !important;
+            height: 0 !important;
+        }
+        tr.collapsed td * {
+            display: none !important;
+        }
+        /* 有隐藏行时，tbody底部显示红色提示线 */
+        tbody.has-collapsed {
+            border-bottom: 2px solid #e74c3c;
+        }
+
+
         .temp-note-area {
             margin-top: 20px;
             text-align: center;
@@ -199,7 +239,8 @@
         .temp-note-textarea {
             width: 100%;
             max-width: 100%;
-            height: 80px;
+            min-height: 80px;
+            field-sizing: content;
             border: 2px solid #ddd;
             border-radius: 8px;
             outline: none;
@@ -253,6 +294,41 @@
         .btn-import:hover { background: #2980b9; }
         .btn-clear { background: #e74c3c; color: #fff; }
         .btn-clear:hover { background: #c0392b; }
+        .btn-show-hidden {
+            background: #fff;
+            color: #e74c3c;
+            border: 2px solid #e74c3c;
+            padding: 8px 20px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        .btn-show-hidden:hover {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .btn-show-hidden.show {
+            display: inline-block !important;
+        }
+        .btn-clear-theme {
+            background: #fff;
+            color: #8e44ad;
+            border: 2px solid #8e44ad;
+            padding: 8px 20px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        .btn-clear-theme:hover {
+            background: #8e44ad;
+            color: #fff;
+        }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -305,16 +381,25 @@
         }
         .save-status.show { opacity: 1; }
         @media (max-width: 768px) {
-            .container { padding: 15px; }
+            body { padding: 5px; }
+            .container { 
+                max-width: none; 
+                width: 100%; 
+                padding: 10px; 
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            }
             table { font-size: 16px; }
             td.data-cell { padding: 8px 4px; height: 44px; font-size: 18px; }
             .digit-input { width: 22px; height: 22px; font-size: 12px; }
             th { padding: 10px 4px; font-size: 14px; }
-            th.input-header, td.input-cell { width: 60px; }
+            th.input-header, td.input-cell { width: 85px; }
             h1 { font-size: 20px; }
-            .temp-note-textarea { height: 60px; font-size: 14px; }
-            .mark-input { width: 24px; height: 20px; font-size: 11px; }
-            .theme-btn { width: 16px; height: 16px; }
+            .temp-note-textarea { min-height: 90px; font-size: 14px; }
+            .mark-input { width: 44px; height: 20px; font-size: 10px; }
+            .theme-btn { width: 15px; height: 15px; }
+            .toggle-btn { width: 22px; height: 22px; font-size: 16px; }
+            .row2-controls { gap: 2px; }
         }
     </style>
 </head>
@@ -332,16 +417,18 @@
             <tbody id="tbody"></tbody>
         </table>
 
-        <div style="text-align: center; margin-top: 10px;">
+        <div style="text-align: center; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 12px;">
             <button class="btn btn-export" onclick="addNewRow()" style="background: #3498db;">+ 添加空白行</button>
+            <button class="btn btn-show-hidden" id="showHiddenBtn" onclick="showAllRows()" style="display: none;">取消隐藏</button>
+            <button class="btn btn-clear-theme" id="clearThemeBtn" onclick="clearAllThemes()" style="display: none;">取消颜色</button>
         </div>
 
         <div class="temp-note-area">
             <textarea class="temp-note-textarea" id="tempNote" placeholder="临时记录..."></textarea>
         </div>
 
-        <p class="hint">在右侧输入4个数字（0-9），自动映射到左侧对应列；<b style="color:#ff0000">红色=唯一</b>，<b style="color:#2196F3">蓝色=重复</b>；点击黄/绿圆点切换行颜色</p>
-        <p class="row-count" id="rowCount">当前行数: 0</p>
+        <p class="hint">在右侧输入5个数字（0-9），自动映射到左侧对应列；<b style="color:#ff0000">红色=唯一</b>，<b style="color:#2196F3">蓝色=重复</b>；点击黄/绿圆点切换行颜色</p>
+        <p class="row-count" id="rowCount">当前行数: 0 / 100</p>
         <p class="save-status" id="saveStatus">已自动保存到本地</p>
 
         <div class="action-bar">
@@ -354,7 +441,7 @@
     <div class="modal-overlay" id="importModal">
         <div class="modal">
             <h3>导入数据</h3>
-            <p style="color:#666; font-size:13px; margin-bottom:10px;">每行输入4个数字，例如：<code>2568</code> 或 <code>2,5,6,8</code></p>
+            <p style="color:#666; font-size:13px; margin-bottom:10px;">每行输入5个数字，例如：<code>25689</code> 或 <code>2,5,6,8,9</code></p>
             <textarea id="importText" placeholder="在此粘贴数据..."></textarea>
             <div class="modal-btns">
                 <button class="btn btn-cancel" onclick="hideImportModal()">取消</button>
@@ -365,7 +452,7 @@
 
     <script>
         const colLabels = ['1','2','3','4','5','6','7','8','9','0'];
-        const MAX_ROWS = Infinity;
+        const MAX_ROWS = 100;
         const STORAGE_KEY = 'number_mapper_data';
         const NOTE_KEY = 'number_mapper_note';
         let rowCounter = 0;
@@ -385,7 +472,8 @@
                 const values = Array.from(inputs).map(inp => inp.value);
                 const theme = row.dataset.rowTheme || 'default';
                 const mark = row.querySelector('.mark-input') ? row.querySelector('.mark-input').value : '';
-                data.push({ values: values, theme: theme, mark: mark });
+                const collapsed = row.classList.contains('collapsed');
+                data.push({ values: values, theme: theme, mark: mark, collapsed: collapsed });
             });
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -451,7 +539,71 @@
 
         function updateRowCount() {
             const rows = tbody.querySelectorAll('tr');
-            rowCountDisplay.textContent = `当前行数: ${rows.length}`;
+            rowCountDisplay.textContent = `当前行数: ${rows.length} / ${MAX_ROWS}`;
+        }
+
+
+        function toggleRowVisibility(rowIdx) {
+            const row = document.querySelector(`tr[data-row-id="${rowIdx}"]`);
+            if (!row) return;
+            const isCollapsed = row.classList.toggle('collapsed');
+            const btn = row.querySelector('.toggle-btn');
+            if (btn) {
+                btn.innerHTML = isCollapsed ? '🏀' : '⚽';
+                btn.title = isCollapsed ? '点击显示' : '点击隐藏';
+            }
+            updateShowAllBtn();
+            saveToLocal();
+        }
+
+        function updateShowAllBtn() {
+            const collapsedRows = tbody.querySelectorAll('tr.collapsed');
+            const btn = document.getElementById('showHiddenBtn');
+            if (collapsedRows.length > 0) {
+                btn.classList.add('show');
+                btn.textContent = '取消隐藏 (' + collapsedRows.length + ')';
+                tbody.classList.add('has-collapsed');
+            } else {
+                btn.classList.remove('show');
+                tbody.classList.remove('has-collapsed');
+            }
+        }
+
+        function updateClearThemeBtn() {
+            const hasTheme = Array.from(tbody.querySelectorAll('tr')).some(
+                row => (row.dataset.rowTheme || 'default') !== 'default'
+            );
+            document.getElementById('clearThemeBtn').style.display = hasTheme ? '' : 'none';
+        }
+
+        function clearAllThemes() {
+            const rows = tbody.querySelectorAll('tr');
+            let changed = 0;
+            rows.forEach(row => {
+                if ((row.dataset.rowTheme || 'default') !== 'default') changed++;
+                row.dataset.rowTheme = 'default';
+                const yellowBtn = row.querySelector('.theme-btn-yellow');
+                const greenBtn = row.querySelector('.theme-btn-green');
+                if (yellowBtn) yellowBtn.classList.remove('active');
+                if (greenBtn) greenBtn.classList.remove('active');
+                updateRow(row.dataset.rowId);
+            });
+            saveToLocal();
+            updateClearThemeBtn();
+        }
+
+        function showAllRows() {
+            const collapsedRows = tbody.querySelectorAll('tr.collapsed');
+            collapsedRows.forEach(row => {
+                row.classList.remove('collapsed');
+                const btn = row.querySelector('.toggle-btn');
+                if (btn) {
+                    btn.innerHTML = '⚽';
+                    btn.title = '点击隐藏';
+                }
+            });
+            updateShowAllBtn();
+            saveToLocal();
         }
 
         function removeFirstRow() {
@@ -475,6 +627,7 @@
 
             updateRow(rowIdx);
             saveToLocal();
+            updateClearThemeBtn();
         }
 
         function createRow(initialData) {
@@ -505,7 +658,7 @@
             container.className = 'input-group';
 
             const inputs = [];
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 5; i++) {
                 const inp = document.createElement('input');
                 inp.type = 'number';
                 inp.className = 'digit-input';
@@ -533,8 +686,8 @@
                 markInput.value = initialData.mark;
             }
             markInput.addEventListener('input', function() {
-                if (this.value.length > 2) {
-                    this.value = this.value.slice(0, 2);
+                if (this.value.length > 4) {
+                    this.value = this.value.slice(0, 4);
                 }
                 saveToLocal();
             });
@@ -560,6 +713,21 @@
             btnGroup.appendChild(yellowBtn);
             btnGroup.appendChild(greenBtn);
 
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-btn';
+            toggleBtn.title = '点击隐藏';
+            toggleBtn.innerHTML = '⚽';
+            toggleBtn.onclick = function() {
+                toggleRowVisibility(rowIdx);
+            };
+            btnGroup.appendChild(toggleBtn);
+
+            if (initialData && initialData.collapsed) {
+                tr.classList.add('collapsed');
+                toggleBtn.innerHTML = '🏀';
+                toggleBtn.title = '点击显示';
+            }
+
             row2.appendChild(markInput);
             row2.appendChild(btnGroup);
 
@@ -581,7 +749,7 @@
                     }
                     updateRow(rowIdx);
                     saveToLocal();
-                    if (val !== '' && idx < 3) {
+                    if (val !== '' && idx < 4) {
                         inputs[idx + 1].focus();
                     }
                     // 不再自动添加新行，改为手动添加
@@ -643,7 +811,9 @@
 
         function addNewRow() {
             const currentRows = tbody.querySelectorAll('tr');
-            
+            if (currentRows.length >= MAX_ROWS) {
+                removeFirstRow();
+            }
             const newRow = createRow();
             tbody.appendChild(newRow);
             updateRowCount();
@@ -710,7 +880,7 @@
                 let mark = '';
                 let numPart = line;
 
-                const markMatch = numPart.match(/\|M(\d+)$/);
+                const markMatch = numPart.match(/\|M(\d{1,4})$/);
                 if (markMatch) {
                     mark = markMatch[1];
                     numPart = numPart.slice(0, numPart.lastIndexOf('|M'));
@@ -725,10 +895,10 @@
                 }
 
                 let digits = numPart.replace(/[^0-9]/g, '').split('');
-                if (digits.length >= 4) {
-                    validData.push({ values: digits.slice(0, 4), theme: theme, mark: mark });
+                if (digits.length >= 5) {
+                    validData.push({ values: digits.slice(0, 5), theme: theme, mark: mark });
                 } else if (digits.length > 0) {
-                    while (digits.length < 4) digits.push('');
+                    while (digits.length < 5) digits.push('');
                     validData.push({ values: digits, theme: theme, mark: mark });
                 }
             });
@@ -739,15 +909,17 @@
             tbody.innerHTML = '';
             rowCounter = 0;
             validData.forEach((item, idx) => {
-                // 不限制行数，全部导入
+                if (idx >= MAX_ROWS) return;
                 const row = createRow(item);
                 tbody.appendChild(row);
                 updateRow(row.dataset.rowId);
             });
             saveToLocal();
             updateRowCount();
+            updateShowAllBtn();
+            updateClearThemeBtn();
             hideImportModal();
-            alert(`成功导入 ${validData.length} 行数据！`);
+            alert(`成功导入 ${Math.min(validData.length, MAX_ROWS)} 行数据！`);
         }
 
         importModal.addEventListener('click', function(e) {
@@ -757,8 +929,16 @@
         });
 
         tempNote.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
             saveNoteToLocal();
         });
+        // 初始加载时也撑开已有内容
+        function autoResizeNote() {
+            tempNote.style.height = 'auto';
+            tempNote.style.height = tempNote.scrollHeight + 'px';
+        }
+        autoResizeNote();
 
         function init() {
             const savedData = loadFromLocal();
@@ -776,6 +956,8 @@
             }
             loadNoteFromLocal();
             updateRowCount();
+            updateShowAllBtn();
+            updateClearThemeBtn();
             setTimeout(() => {
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }, 100);
